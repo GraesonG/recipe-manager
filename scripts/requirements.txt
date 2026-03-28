@@ -1,0 +1,2 @@
+gkeepapi>=0.15.0
+keyring>=24.0.0

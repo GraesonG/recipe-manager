@@ -1,0 +1,94 @@
+{
+  "recipes": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "name": "Pasta Carbonara",
+      "servings": 4,
+      "ingredients": [
+        { "id": "ing-001", "name": "Spaghetti", "quantity": "400", "unit": "g" },
+        { "id": "ing-002", "name": "Pancetta", "quantity": "200", "unit": "g" },
+        { "id": "ing-003", "name": "Eggs", "quantity": "4", "unit": "large" },
+        { "id": "ing-004", "name": "Parmesan cheese", "quantity": "100", "unit": "g" },
+        { "id": "ing-005", "name": "Black pepper", "quantity": "2", "unit": "tsp" },
+        { "id": "ing-006", "name": "Salt", "quantity": "1", "unit": "tbsp" }
+      ],
+      "cookingInfo": [
+        { "id": "cook-001", "time": "12 min", "temp": "Boiling", "description": "Cook pasta in salted boiling water" },
+        { "id": "cook-002", "time": "8 min", "temp": "Medium", "description": "Crisp pancetta in pan" }
+      ],
+      "steps": [
+        "Bring a large pot of salted water to boil and cook spaghetti according to package directions.",
+        "While pasta cooks, cut pancetta into small cubes and cook in a large pan over medium heat until crispy.",
+        "In a bowl, whisk together eggs, grated Parmesan, and black pepper.",
+        "When pasta is al dente, reserve 1 cup pasta water, then drain.",
+        "Remove pan from heat, add hot pasta to pancetta, and quickly toss.",
+        "Pour egg mixture over pasta and toss vigorously, adding pasta water as needed to create a creamy sauce.",
+        "Serve immediately with extra Parmesan and black pepper."
+      ],
+      "createdAt": "2025-01-15T10:30:00.000Z",
+      "updatedAt": "2025-01-15T10:30:00.000Z"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "name": "Chicken Tikka Masala",
+      "servings": 6,
+      "ingredients": [
+        { "id": "ing-007", "name": "Chicken breast", "quantity": "800", "unit": "g" },
+        { "id": "ing-008", "name": "Yogurt", "quantity": "200", "unit": "g" },
+        { "id": "ing-009", "name": "Garam masala", "quantity": "2", "unit": "tbsp" },
+        { "id": "ing-010", "name": "Cumin", "quantity": "1", "unit": "tsp" },
+        { "id": "ing-011", "name": "Paprika", "quantity": "1", "unit": "tbsp" },
+        { "id": "ing-012", "name": "Tomato sauce", "quantity": "400", "unit": "ml" },
+        { "id": "ing-013", "name": "Heavy cream", "quantity": "200", "unit": "ml" },
+        { "id": "ing-014", "name": "Onion", "quantity": "2", "unit": "medium" },
+        { "id": "ing-015", "name": "Garlic", "quantity": "4", "unit": "cloves" },
+        { "id": "ing-016", "name": "Ginger", "quantity": "1", "unit": "inch" }
+      ],
+      "cookingInfo": [
+        { "id": "cook-003", "time": "2 hours", "temp": "Refrigerated", "description": "Marinate chicken" },
+        { "id": "cook-004", "time": "15 min", "temp": "High (450°F)", "description": "Broil marinated chicken" },
+        { "id": "cook-005", "time": "25 min", "temp": "Medium", "description": "Simmer sauce" }
+      ],
+      "steps": [
+        "Cut chicken into bite-sized pieces and marinate in yogurt, half the garam masala, cumin, and paprika for at least 2 hours.",
+        "Preheat broiler to high. Thread chicken onto skewers and broil for 12-15 minutes, turning once.",
+        "Dice onions, mince garlic and ginger. Sauté in oil until onions are soft.",
+        "Add remaining spices and cook for 1 minute until fragrant.",
+        "Pour in tomato sauce and simmer for 15 minutes.",
+        "Add cream and cooked chicken, simmer for another 10 minutes.",
+        "Serve over basmati rice with naan bread."
+      ],
+      "createdAt": "2025-01-14T15:45:00.000Z",
+      "updatedAt": "2025-01-14T15:45:00.000Z"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440003",
+      "name": "Beef Tacos",
+      "servings": 4,
+      "ingredients": [
+        { "id": "ing-017", "name": "Ground beef", "quantity": "500", "unit": "g" },
+        { "id": "ing-018", "name": "Taco seasoning", "quantity": "2", "unit": "tbsp" },
+        { "id": "ing-019", "name": "Taco shells", "quantity": "12", "unit": "shells" },
+        { "id": "ing-020", "name": "Lettuce", "quantity": "1", "unit": "head" },
+        { "id": "ing-021", "name": "Tomatoes", "quantity": "2", "unit": "medium" },
+        { "id": "ing-022", "name": "Cheddar cheese", "quantity": "150", "unit": "g" },
+        { "id": "ing-023", "name": "Sour cream", "quantity": "100", "unit": "g" },
+        { "id": "ing-024", "name": "Salsa", "quantity": "150", "unit": "ml" }
+      ],
+      "cookingInfo": [
+        { "id": "cook-006", "time": "10 min", "temp": "Medium-High", "description": "Brown and season beef" },
+        { "id": "cook-007", "time": "5 min", "temp": "350°F", "description": "Warm taco shells" }
+      ],
+      "steps": [
+        "Brown ground beef in a large skillet over medium-high heat, breaking it up as it cooks.",
+        "Drain excess fat and add taco seasoning with a splash of water. Simmer for 5 minutes.",
+        "Warm taco shells according to package directions.",
+        "Shred lettuce, dice tomatoes, and grate cheese.",
+        "Set up a taco bar with meat, shells, and all toppings.",
+        "Let everyone build their own tacos with desired toppings."
+      ],
+      "createdAt": "2025-01-18T12:00:00.000Z",
+      "updatedAt": "2025-01-18T12:00:00.000Z"
+    }
+  ]
+}

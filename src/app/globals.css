@@ -1,0 +1,235 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --glass-blur: 20px;
+  --glass-blur-heavy: 40px;
+}
+
+/* Force dark mode */
+html {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-apple-bg text-apple-label antialiased;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Liquid Glass Base Styles */
+@layer components {
+  /* Glass Panel - The core Liquid Glass component */
+  .glass-panel {
+    @apply relative overflow-hidden;
+    @apply bg-glass-bg backdrop-blur-[20px];
+    @apply border border-glass-border;
+    @apply rounded-glass;
+    @apply shadow-glass;
+    
+    /* Specular highlight effect */
+    background-image: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+
+  .glass-panel-elevated {
+    @apply relative overflow-hidden;
+    @apply bg-glass-bg-elevated backdrop-blur-[20px];
+    @apply border border-glass-border-bright;
+    @apply rounded-glass;
+    @apply shadow-glass-elevated;
+    
+    background-image: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.15) 0%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+
+  .glass-panel-subtle {
+    @apply relative overflow-hidden;
+    @apply bg-glass-bg backdrop-blur-[12px];
+    @apply border border-glass-border;
+    @apply rounded-glass-sm;
+    @apply shadow-glass-subtle;
+  }
+
+  /* Glass Button */
+  .glass-button {
+    @apply relative overflow-hidden;
+    @apply px-4 py-2;
+    @apply bg-glass-bg backdrop-blur-[16px];
+    @apply border border-glass-border;
+    @apply rounded-glass-sm;
+    @apply text-apple-label font-medium;
+    @apply transition-all duration-200 ease-out;
+    @apply cursor-pointer;
+    
+    background-image: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.02) 100%
+    );
+  }
+
+  .glass-button:hover {
+    @apply bg-glass-bg-hover;
+    @apply border-glass-border-bright;
+    @apply shadow-glass-subtle;
+    transform: translateY(-1px);
+  }
+
+  .glass-button:active {
+    transform: translateY(0);
+    @apply bg-glass-bg;
+  }
+
+  .glass-button-primary {
+    @apply glass-button;
+    @apply bg-apple-blue/90 border-apple-blue/50;
+    background-image: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+  }
+
+  .glass-button-primary:hover {
+    @apply bg-apple-blue border-apple-blue/70;
+  }
+
+  .glass-button-danger {
+    @apply glass-button;
+    @apply bg-apple-red/20 border-apple-red/30 text-apple-red;
+  }
+
+  .glass-button-danger:hover {
+    @apply bg-apple-red/30 border-apple-red/50;
+  }
+
+  /* Glass Input */
+  .glass-input {
+    @apply w-full px-4 py-3;
+    @apply bg-glass-bg backdrop-blur-[16px];
+    @apply border border-glass-border;
+    @apply rounded-glass-sm;
+    @apply text-apple-label placeholder-apple-label-tertiary;
+    @apply outline-none;
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .glass-input:focus {
+    @apply border-apple-blue/50;
+    @apply ring-2 ring-apple-blue/20;
+  }
+
+  .glass-input:hover:not(:focus) {
+    @apply border-glass-border-bright;
+  }
+
+  /* Glass Card */
+  .glass-card {
+    @apply glass-panel p-5;
+    @apply transition-all duration-300 ease-out;
+    @apply cursor-pointer;
+  }
+
+  .glass-card:hover {
+    @apply bg-glass-bg-hover;
+    @apply border-glass-border-bright;
+    @apply shadow-glass-elevated;
+    transform: translateY(-2px);
+  }
+
+  /* Glass Navigation */
+  .glass-nav {
+    @apply fixed top-0 left-0 right-0 z-50;
+    @apply bg-glass-bg backdrop-blur-[30px];
+    @apply border-b border-glass-border;
+  }
+
+  /* Glass Toolbar */
+  .glass-toolbar {
+    @apply flex items-center gap-2;
+    @apply p-2;
+    @apply bg-glass-bg backdrop-blur-[20px];
+    @apply border border-glass-border;
+    @apply rounded-glass;
+  }
+
+  /* Glass Select */
+  .glass-select {
+    @apply glass-input;
+    @apply appearance-none;
+    @apply pr-10;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+
+  /* Glass Divider */
+  .glass-divider {
+    @apply h-px w-full;
+    @apply bg-apple-separator;
+  }
+
+  .glass-divider-vertical {
+    @apply w-px h-full;
+    @apply bg-apple-separator;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for Liquid Glass aesthetic */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Selection color */
+::selection {
+  background: rgba(10, 132, 255, 0.3);
+  color: inherit;
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid rgba(10, 132, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* Transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Remove transition from elements that shouldn't animate */
+input, textarea, select {
+  transition-property: border-color, box-shadow;
+}

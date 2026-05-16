@@ -1,15 +1,68 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useMealPrep, formatQuantity } from '@/lib/meal-prep-context';
 import { MealPrepRecipeCard, CombinedIngredientsList } from '@/components';
 import { Button, GlassPanel } from '@/components/ui';
 
+interface ShoppingItem {
+  name: string;
+  quantity: string;
+  unit: string;
+}
+
+function buildShoppingText(title: string, items: ShoppingItem[]): string {
+  const lines = items.map((ing) => {
+    const qtyUnit = [ing.quantity, ing.unit].filter(Boolean).join(' ');
+    return qtyUnit ? `- ${qtyUnit} ${ing.name}` : `- ${ing.name}`;
+  });
+  return [title, ...lines].join('\n');
+}
+
 export default function MealPrepPage() {
   const { items, clearAll, getCombinedIngredients, isOverridden, isHydrated } = useMealPrep();
   const [isSending, setIsSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [keepConfigured, setKeepConfigured] = useState<boolean | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/google-keep')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setKeepConfigured(Boolean(data?.configured));
+      })
+      .catch(() => {
+        if (!cancelled) setKeepConfigured(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const buildShoppingItems = (): ShoppingItem[] => {
+    return getCombinedIngredients()
+      .filter((ing) => !ing.isPantryStaple || isOverridden(ing))
+      .map((ing) => ({
+        name: ing.name,
+        quantity: formatQuantity(ing.totalQuantity),
+        unit: ing.unit,
+      }));
+  };
+
+  const handleCopy = async () => {
+    const title = `Meal Prep - ${getWeekDateRange()}`;
+    const text = buildShoppingText(title, buildShoppingItems());
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setSendResult({ success: false, message: 'Could not copy to clipboard' });
+    }
+  };
 
   // Get current week's date range
   const getWeekDateRange = () => {
@@ -36,50 +89,24 @@ export default function MealPrepPage() {
     setSendResult(null);
 
     try {
-      const combinedIngredients = getCombinedIngredients();
-      const shoppingIngredients = combinedIngredients.filter(
-        (ing) => !ing.isPantryStaple || isOverridden(ing)
-      );
-      const weekRange = getWeekDateRange();
-
-      // Get API key from environment variable
-      const apiKey = process.env.NEXT_PUBLIC_GKEEP_API_KEY || '';
-
       const response = await fetch('/api/google-keep', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: `Meal Prep - ${weekRange}`,
-          ingredients: shoppingIngredients.map((ing) => ({
-            name: ing.name,
-            quantity: formatQuantity(ing.totalQuantity),
-            unit: ing.unit,
-          })),
+          title: `Meal Prep - ${getWeekDateRange()}`,
+          ingredients: buildShoppingItems(),
         }),
       });
-
       const data = await response.json();
-
-      if (response.status === 401) {
-        setSendResult({
-          success: false,
-          message: data.error || 'Unauthorized. Check your API key configuration.',
-        });
-      } else if (data.success) {
-        setSendResult({
-          success: true,
-          message: 'Shopping list sent to Google Keep!',
-        });
+      if (data.success) {
+        setSendResult({ success: true, message: 'Shopping list sent to Google Keep!' });
       } else {
         setSendResult({
           success: false,
           message: data.error || 'Failed to send to Google Keep',
         });
       }
-    } catch (error) {
+    } catch {
       setSendResult({
         success: false,
         message: 'Failed to connect to Google Keep. Make sure the integration is set up.',
@@ -183,10 +210,18 @@ export default function MealPrepPage() {
           <Button variant="ghost" onClick={clearAll}>
             Clear All
           </Button>
+          <Button variant="ghost" onClick={handleCopy}>
+            {copied ? 'Copied!' : 'Copy as text'}
+          </Button>
           <Button
             variant="primary"
             onClick={handleSendToGoogleKeep}
-            disabled={isSending}
+            disabled={isSending || keepConfigured === false}
+            title={
+              keepConfigured === false
+                ? 'Google Keep not configured — see docs/google-keep-setup.md'
+                : undefined
+            }
           >
             {isSending ? (
               <span className="flex items-center gap-2">

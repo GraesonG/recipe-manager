@@ -6,7 +6,8 @@ A personal recipe management app with meal prep planning and Google Keep integra
 
 - Store and manage recipes with ingredients, cooking info, and steps
 - Browse recipes with sorting (A-Z, Z-A, Newest, Oldest)
-- Meal prep staging area with serving adjustments
+- **Import from URL** — paste a recipe page URL and the app extracts ingredients/steps/timing. Uses Schema.org JSON-LD for free when available; falls back to Claude (Anthropic) for pages without structured data.
+- Meal prep staging area with serving adjustments (persists across reloads)
 - Automatic ingredient combination and deduplication
 - **Pantry staple flag** — mark ingredients you keep on hand (salt, oil, etc.) so they're excluded from the shopping list
 - Send shopping lists to Google Keep
@@ -28,7 +29,9 @@ cd recipe-manager
 npm install
 ```
 
-### 2. Configure API Key
+### 2. Configure Environment Variables
+
+#### Google Keep API Key (required for Keep export)
 
 The Google Keep endpoint is protected by an API key. Set it up:
 
@@ -48,6 +51,16 @@ Your `.env.local` should look like:
 GKEEP_API_KEY=your-generated-random-key-here
 NEXT_PUBLIC_GKEEP_API_KEY=your-generated-random-key-here
 ```
+
+#### Anthropic API Key (optional — only for AI URL import on non-JSON-LD pages)
+
+Get a key at [console.anthropic.com](https://console.anthropic.com/) and add it to `.env.local`:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Without it, "Import from URL" still works on pages that publish Schema.org `Recipe` JSON-LD (most major recipe sites). Pages without JSON-LD will return a 503 prompting setup.
 
 ### 3. Set Up Google Keep Integration (Optional)
 
@@ -101,9 +114,10 @@ Open [http://localhost:3000](http://localhost:3000)
 ### Managing Recipes
 
 1. **Add a Recipe**: Click "Add Recipe" button, fill in the form
-2. **View Recipe**: Click any recipe card to see full details
-3. **Edit Recipe**: From the recipe detail page, click "Edit"
-4. **Delete Recipe**: From the recipe detail page, click "Delete"
+2. **Import from URL**: Click "Import from URL" in the toolbar, paste a recipe URL. We try Schema.org JSON-LD first (free), then fall back to Claude if needed. You review and edit the extracted recipe before saving.
+3. **View Recipe**: Click any recipe card to see full details
+4. **Edit Recipe**: From the recipe detail page, click "Edit"
+5. **Delete Recipe**: From the recipe detail page, click "Delete"
 
 ### Marking Pantry Staples
 

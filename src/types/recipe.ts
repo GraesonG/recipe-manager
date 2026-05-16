@@ -22,6 +22,7 @@ export interface Recipe {
   ingredients: Ingredient[];
   cookingInfo: CookingInfo[];
   steps: string[];
+  sourceUrl?: string;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
 }
@@ -57,6 +58,7 @@ export interface RecipeInput {
   ingredients: IngredientInput[];
   cookingInfo: CookingInfoInput[];
   steps: string[];
+  sourceUrl?: string;
 }
 
 // Sorting Types

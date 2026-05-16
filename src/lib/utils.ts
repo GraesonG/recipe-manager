@@ -24,6 +24,7 @@ export function createIngredient(input: IngredientInput): Ingredient {
     name: input.name.trim(),
     quantity: input.quantity.trim(),
     unit: input.unit.trim(),
+    isPantryStaple: input.isPantryStaple ?? false,
   };
 }
 
@@ -118,7 +119,7 @@ export function createEmptyRecipeInput(): RecipeInput {
   return {
     name: '',
     servings: 4,
-    ingredients: [{ name: '', quantity: '', unit: '' }],
+    ingredients: [{ name: '', quantity: '', unit: '', isPantryStaple: false }],
     cookingInfo: [{ time: '', temp: '', description: '' }],
     steps: [''],
   };
@@ -131,10 +132,11 @@ export function recipeToInput(recipe: Recipe): RecipeInput {
   return {
     name: recipe.name,
     servings: recipe.servings,
-    ingredients: recipe.ingredients.map(({ name, quantity, unit }) => ({
+    ingredients: recipe.ingredients.map(({ name, quantity, unit, isPantryStaple }) => ({
       name,
       quantity,
       unit,
+      isPantryStaple: isPantryStaple ?? false,
     })),
     cookingInfo: recipe.cookingInfo.map(({ time, temp, description }) => ({
       time,

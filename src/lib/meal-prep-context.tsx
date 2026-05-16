@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Recipe, MealPrepItem, CombinedIngredient } from '@/types';
+import { combineIngredients, combineKey } from './combine-ingredients';
 
 interface MealPrepContextType {
   items: MealPrepItem[];
@@ -12,16 +13,19 @@ interface MealPrepContextType {
   isInMealPrep: (recipeId: string) => boolean;
   getCombinedIngredients: () => CombinedIngredient[];
   totalRecipes: number;
+  pantryOverrides: Set<string>;
+  isOverridden: (combined: CombinedIngredient) => boolean;
+  togglePantryOverride: (combined: CombinedIngredient) => void;
 }
 
 const MealPrepContext = createContext<MealPrepContextType | undefined>(undefined);
 
 export function MealPrepProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<MealPrepItem[]>([]);
+  const [pantryOverrides, setPantryOverrides] = useState<Set<string>>(new Set());
 
   const addRecipe = useCallback((recipe: Recipe) => {
     setItems((prev) => {
-      // Check if already exists
       if (prev.some((item) => item.recipeId === recipe.id)) {
         return prev;
       }
@@ -30,7 +34,7 @@ export function MealPrepProvider({ children }: { children: ReactNode }) {
         {
           recipeId: recipe.id,
           recipe,
-          servings: recipe.servings, // Start with original servings
+          servings: recipe.servings,
         },
       ];
     });
@@ -51,63 +55,37 @@ export function MealPrepProvider({ children }: { children: ReactNode }) {
 
   const clearAll = useCallback(() => {
     setItems([]);
+    setPantryOverrides(new Set());
   }, []);
 
   const isInMealPrep = useCallback(
-    (recipeId: string) => {
-      return items.some((item) => item.recipeId === recipeId);
-    },
+    (recipeId: string) => items.some((item) => item.recipeId === recipeId),
     [items]
   );
 
-  const getCombinedIngredients = useCallback((): CombinedIngredient[] => {
-    const ingredientMap = new Map<string, CombinedIngredient>();
+  const getCombinedIngredients = useCallback(
+    () => combineIngredients(items),
+    [items]
+  );
 
-    items.forEach((item) => {
-      const servingsMultiplier = item.servings / item.recipe.servings;
+  const isOverridden = useCallback(
+    (combined: CombinedIngredient) =>
+      pantryOverrides.has(combineKey(combined.name, combined.unit)),
+    [pantryOverrides]
+  );
 
-      item.recipe.ingredients.forEach((ingredient) => {
-        // Create a key based on ingredient name and unit (normalized)
-        const normalizedName = ingredient.name.toLowerCase().trim();
-        const normalizedUnit = ingredient.unit.toLowerCase().trim();
-        const key = `${normalizedName}|${normalizedUnit}`;
-
-        // Parse quantity as number (handle fractions and ranges)
-        let quantity = parseQuantity(ingredient.quantity);
-        const scaledQuantity = quantity * servingsMultiplier;
-
-        if (ingredientMap.has(key)) {
-          const existing = ingredientMap.get(key)!;
-          existing.totalQuantity += scaledQuantity;
-          existing.originalQuantities.push({
-            recipeId: item.recipeId,
-            recipeName: item.recipe.name,
-            quantity: scaledQuantity,
-            servingsMultiplier,
-          });
-        } else {
-          ingredientMap.set(key, {
-            name: ingredient.name,
-            unit: ingredient.unit,
-            totalQuantity: scaledQuantity,
-            originalQuantities: [
-              {
-                recipeId: item.recipeId,
-                recipeName: item.recipe.name,
-                quantity: scaledQuantity,
-                servingsMultiplier,
-              },
-            ],
-          });
-        }
-      });
+  const togglePantryOverride = useCallback((combined: CombinedIngredient) => {
+    const key = combineKey(combined.name, combined.unit);
+    setPantryOverrides((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
     });
-
-    // Convert map to array and sort alphabetically
-    return Array.from(ingredientMap.values()).sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
-  }, [items]);
+  }, []);
 
   return (
     <MealPrepContext.Provider
@@ -120,6 +98,9 @@ export function MealPrepProvider({ children }: { children: ReactNode }) {
         isInMealPrep,
         getCombinedIngredients,
         totalRecipes: items.length,
+        pantryOverrides,
+        isOverridden,
+        togglePantryOverride,
       }}
     >
       {children}
@@ -135,79 +116,4 @@ export function useMealPrep() {
   return context;
 }
 
-/**
- * Parse a quantity string to a number
- * Handles: "2", "1.5", "1/2", "1 1/2", etc.
- */
-function parseQuantity(quantity: string): number {
-  if (!quantity || quantity.trim() === '') return 0;
-
-  const trimmed = quantity.trim();
-
-  // Try direct number parse first
-  const direct = parseFloat(trimmed);
-  if (!isNaN(direct) && !trimmed.includes('/')) {
-    return direct;
-  }
-
-  // Handle fractions like "1/2"
-  if (trimmed.includes('/')) {
-    const parts = trimmed.split(' ');
-    let total = 0;
-
-    parts.forEach((part) => {
-      if (part.includes('/')) {
-        const [num, denom] = part.split('/').map((n) => parseFloat(n.trim()));
-        if (!isNaN(num) && !isNaN(denom) && denom !== 0) {
-          total += num / denom;
-        }
-      } else {
-        const num = parseFloat(part);
-        if (!isNaN(num)) {
-          total += num;
-        }
-      }
-    });
-
-    return total;
-  }
-
-  return direct || 0;
-}
-
-/**
- * Format a quantity number back to a readable string
- */
-export function formatQuantity(quantity: number): string {
-  if (quantity === 0) return '';
-  
-  // Round to 2 decimal places
-  const rounded = Math.round(quantity * 100) / 100;
-  
-  // If it's a whole number, return as integer
-  if (rounded === Math.floor(rounded)) {
-    return rounded.toString();
-  }
-  
-  // Common fractions
-  const fractions: [number, string][] = [
-    [0.25, '¼'],
-    [0.33, '⅓'],
-    [0.5, '½'],
-    [0.67, '⅔'],
-    [0.75, '¾'],
-  ];
-  
-  const wholePart = Math.floor(rounded);
-  const decimalPart = rounded - wholePart;
-  
-  // Check if decimal part matches a common fraction
-  for (const [value, symbol] of fractions) {
-    if (Math.abs(decimalPart - value) < 0.05) {
-      return wholePart > 0 ? `${wholePart} ${symbol}` : symbol;
-    }
-  }
-  
-  // Otherwise return decimal
-  return rounded.toFixed(2).replace(/\.?0+$/, '');
-}
+export { formatQuantity } from './combine-ingredients';

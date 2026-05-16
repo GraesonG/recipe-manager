@@ -7,7 +7,7 @@ import { MealPrepRecipeCard, CombinedIngredientsList } from '@/components';
 import { Button, GlassPanel } from '@/components/ui';
 
 export default function MealPrepPage() {
-  const { items, clearAll, getCombinedIngredients } = useMealPrep();
+  const { items, clearAll, getCombinedIngredients, isOverridden } = useMealPrep();
   const [isSending, setIsSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -37,6 +37,9 @@ export default function MealPrepPage() {
 
     try {
       const combinedIngredients = getCombinedIngredients();
+      const shoppingIngredients = combinedIngredients.filter(
+        (ing) => !ing.isPantryStaple || isOverridden(ing)
+      );
       const weekRange = getWeekDateRange();
 
       // Get API key from environment variable
@@ -50,7 +53,7 @@ export default function MealPrepPage() {
         },
         body: JSON.stringify({
           title: `Meal Prep - ${weekRange}`,
-          ingredients: combinedIngredients.map((ing) => ({
+          ingredients: shoppingIngredients.map((ing) => ({
             name: ing.name,
             quantity: formatQuantity(ing.totalQuantity),
             unit: ing.unit,

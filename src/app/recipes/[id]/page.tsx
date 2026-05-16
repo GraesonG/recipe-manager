@@ -239,7 +239,7 @@ export default function RecipeDetailPage() {
               Delete Recipe?
             </h3>
             <p className="text-apple-label-secondary mb-6">
-              Are you sure you want to delete "{recipe.name}"? This action cannot be undone.
+              Are you sure you want to delete &ldquo;{recipe.name}&rdquo;? This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <Button

@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { RecipeInput, IngredientInput, CookingInfoInput } from '@/types';
-import { createEmptyRecipeInput, validateRecipeInput, recipeToInput } from '@/lib/utils';
+import { createEmptyRecipeInput, validateRecipeInput } from '@/lib/utils';
 import { createRecipe, updateRecipe } from '@/lib/api';
+import { isLikelyStaple } from '@/lib/combine-ingredients';
 import { Button, Input, TextArea, GlassPanel } from '@/components/ui';
 
 interface RecipeFormProps {
@@ -41,10 +42,27 @@ export function RecipeForm({ initialData, recipeId, mode }: RecipeFormProps) {
     updateField('ingredients', newIngredients);
   };
 
+  const togglePantryStaple = (index: number) => {
+    const newIngredients = [...formData.ingredients];
+    newIngredients[index] = {
+      ...newIngredients[index],
+      isPantryStaple: !newIngredients[index].isPantryStaple,
+    };
+    updateField('ingredients', newIngredients);
+  };
+
+  const suggestStaples = () => {
+    const newIngredients = formData.ingredients.map((ing) => ({
+      ...ing,
+      isPantryStaple: ing.isPantryStaple || isLikelyStaple(ing.name),
+    }));
+    updateField('ingredients', newIngredients);
+  };
+
   const addIngredient = () => {
     updateField('ingredients', [
       ...formData.ingredients,
-      { name: '', quantity: '', unit: '' },
+      { name: '', quantity: '', unit: '', isPantryStaple: false },
     ]);
   };
 
@@ -173,22 +191,30 @@ export function RecipeForm({ initialData, recipeId, mode }: RecipeFormProps) {
 
       {/* Ingredients Section */}
       <GlassPanel className="p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-semibold text-apple-label">Ingredients</h2>
-          <Button type="button" variant="ghost" size="sm" onClick={addIngredient}>
-            <span className="flex items-center gap-1.5">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Add Ingredient
-            </span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={suggestStaples}>
+              Suggest staples
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={addIngredient}>
+              <span className="flex items-center gap-1.5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Ingredient
+              </span>
+            </Button>
+          </div>
         </div>
+        <p className="text-xs text-apple-label-tertiary mb-6">
+          Mark spices and pantry items as &ldquo;Pantry&rdquo; so they stay off the shopping list.
+        </p>
 
         <div className="space-y-3">
           {formData.ingredients.map((ingredient, index) => (
-            <div key={index} className="flex items-start gap-3">
-              <div className="flex-1">
+            <div key={index} className="flex items-start gap-3 flex-wrap">
+              <div className="flex-1 min-w-[160px]">
                 <Input
                   placeholder="Ingredient name"
                   value={ingredient.name}
@@ -209,6 +235,28 @@ export function RecipeForm({ initialData, recipeId, mode }: RecipeFormProps) {
                   onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
                 />
               </div>
+              <button
+                type="button"
+                onClick={() => togglePantryStaple(index)}
+                aria-pressed={!!ingredient.isPantryStaple}
+                title={
+                  ingredient.isPantryStaple
+                    ? 'Pantry staple — won’t appear on shopping list'
+                    : 'Mark as pantry staple'
+                }
+                className={`mt-1 inline-flex items-center gap-1 rounded-full border px-3 h-9 text-xs font-medium transition-colors ${
+                  ingredient.isPantryStaple
+                    ? 'bg-apple-blue/20 border-apple-blue/40 text-apple-blue'
+                    : 'bg-transparent border-glass-border text-apple-label-secondary hover:text-apple-label'
+                }`}
+              >
+                {ingredient.isPantryStaple && (
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+                Pantry
+              </button>
               <Button
                 type="button"
                 variant="ghost"

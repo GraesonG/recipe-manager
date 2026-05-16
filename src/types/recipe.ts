@@ -5,6 +5,7 @@ export interface Ingredient {
   name: string;
   quantity: string;
   unit: string;
+  isPantryStaple?: boolean;
 }
 
 export interface CookingInfo {
@@ -41,6 +42,7 @@ export interface IngredientInput {
   name: string;
   quantity: string;
   unit: string;
+  isPantryStaple?: boolean;
 }
 
 export interface CookingInfoInput {
@@ -83,6 +85,7 @@ export interface CombinedIngredient {
   name: string;
   unit: string;
   totalQuantity: number;
+  isPantryStaple: boolean; // true only if every contributing ingredient is flagged
   originalQuantities: {
     recipeId: string;
     recipeName: string;

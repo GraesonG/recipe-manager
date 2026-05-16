@@ -68,7 +68,7 @@ export default function RecipeDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8">
           <Link
             href="/"
@@ -89,7 +89,7 @@ export default function RecipeDetailPage() {
 
   if (error || !recipe) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8">
           <Link
             href="/"
@@ -113,7 +113,7 @@ export default function RecipeDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
       {/* Back Link */}
       <div className="mb-6">
         <Link
@@ -133,7 +133,7 @@ export default function RecipeDetailPage() {
           <h1 className="text-3xl font-semibold text-apple-label mb-2">
             {recipe.name}
           </h1>
-          <div className="flex items-center gap-4 text-apple-label-secondary">
+          <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-apple-label-secondary">
             <span className="flex items-center gap-1.5">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -170,7 +170,7 @@ export default function RecipeDetailPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center flex-wrap gap-2">
           <Button
             variant={inMealPrep ? 'default' : 'primary'}
             onClick={handleToggleMealPrep}

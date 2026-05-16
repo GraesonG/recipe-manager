@@ -50,11 +50,11 @@ export function Header() {
 
   return (
     <header className="glass-nav">
-      <div className="max-w-6xl mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
+        <div className="flex items-center justify-between gap-3">
           {/* Logo / Title */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-glass-sm bg-gradient-to-br from-apple-blue to-apple-purple flex items-center justify-center shadow-glass-subtle">
+          <Link href="/" className="flex items-center gap-3 group min-w-0">
+            <div className="w-10 h-10 rounded-glass-sm bg-gradient-to-br from-apple-blue to-apple-purple flex items-center justify-center shadow-glass-subtle flex-shrink-0">
               <svg
                 className="w-6 h-6 text-white"
                 fill="none"
@@ -69,13 +69,13 @@ export function Header() {
                 />
               </svg>
             </div>
-            <span className="text-xl font-semibold text-apple-label group-hover:text-apple-blue transition-colors">
+            <span className="hidden xs:inline text-xl font-semibold text-apple-label group-hover:text-apple-blue transition-colors truncate">
               Recipe Manager
             </span>
           </Link>
 
           {/* Navigation */}
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-1 flex-shrink-0">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -83,11 +83,12 @@ export function Header() {
                   <Button
                     variant={isActive ? 'primary' : 'ghost'}
                     size="sm"
-                    className={`relative ${isActive ? '' : 'text-apple-label-secondary'}`}
+                    aria-label={item.label}
+                    className={`relative min-h-[44px] ${isActive ? '' : 'text-apple-label-secondary'}`}
                   >
                     <span className="flex items-center gap-2">
                       {item.icon}
-                      {item.label}
+                      <span className="hidden sm:inline">{item.label}</span>
                       {/* Badge for meal prep count */}
                       {item.showBadge && totalRecipes > 0 && (
                         <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-apple-red text-white text-xs font-semibold flex items-center justify-center">

@@ -21,7 +21,7 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
       </h3>
 
       {/* Quick Info */}
-      <div className="flex items-center gap-3 text-sm text-apple-label-secondary mb-4">
+      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-sm text-apple-label-secondary mb-4">
         <span className="flex items-center gap-1.5">
           <svg
             className="w-4 h-4"

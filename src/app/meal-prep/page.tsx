@@ -91,7 +91,7 @@ export default function MealPrepPage() {
 
   if (items.length === 0) {
     return (
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-semibold text-apple-label mb-2">
             Meal Prep
@@ -152,7 +152,7 @@ export default function MealPrepPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-8">
         <div>
@@ -164,7 +164,7 @@ export default function MealPrepPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center flex-wrap gap-3">
           <Button variant="ghost" onClick={clearAll}>
             Clear All
           </Button>

@@ -9,6 +9,9 @@ const config: Config = {
   darkMode: 'class',
   theme: {
     extend: {
+      screens: {
+        xs: '375px',
+      },
       colors: {
         // Liquid Glass Dark Mode Palette
         glass: {

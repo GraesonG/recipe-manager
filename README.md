@@ -111,7 +111,7 @@ In the recipe form, each ingredient row has a **Pantry** toggle. Flip it on for 
 
 ### Meal Prep
 
-1. **Add to Meal Prep**: From any recipe detail page, click "Add to Meal Prep"
+1. **Add to Meal Prep**: From the home grid, click the **+** button in the top-right corner of any recipe card (or use the "Add to Meal Prep" button on the recipe detail page). Your meal-prep selection persists across page reloads.
 2. **Adjust Servings**: On the Meal Prep page, use +/- buttons to scale servings
 3. **View Combined List**: The right panel shows all ingredients combined into a shopping list. Ingredients flagged as pantry staples (in every contributing recipe) are hidden under a collapsible "Pantry items — not shopping" section. Click the checkbox next to any pantry item to add it back to the shopping list for this week.
 4. **Send to Google Keep**: Click "Send to Google Keep" to create a checklist (pantry items are excluded unless overridden)

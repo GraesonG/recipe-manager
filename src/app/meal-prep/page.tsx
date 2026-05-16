@@ -7,7 +7,7 @@ import { MealPrepRecipeCard, CombinedIngredientsList } from '@/components';
 import { Button, GlassPanel } from '@/components/ui';
 
 export default function MealPrepPage() {
-  const { items, clearAll, getCombinedIngredients, isOverridden } = useMealPrep();
+  const { items, clearAll, getCombinedIngredients, isOverridden, isHydrated } = useMealPrep();
   const [isSending, setIsSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -88,6 +88,21 @@ export default function MealPrepPage() {
       setIsSending(false);
     }
   };
+
+  if (!isHydrated) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold text-apple-label mb-2">
+            Meal Prep
+          </h1>
+        </div>
+        <GlassPanel className="p-12 text-center text-apple-label-tertiary">
+          Loading…
+        </GlassPanel>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (

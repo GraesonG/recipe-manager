@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Header } from '@/components';
 import { MealPrepProvider } from '@/lib/meal-prep-context';
@@ -8,14 +8,26 @@ export const metadata: Metadata = {
   description: 'A personal recipe manager with meal prep and Google Keep integration',
 };
 
+export const viewport: Viewport = {
+  colorScheme: 'dark',
+  themeColor: '#000000',
+};
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen bg-apple-bg">
+    <html
+      lang="en"
+      className="dark"
+      style={{ backgroundColor: '#000000', colorScheme: 'dark' }}
+    >
+      <body
+        className="min-h-screen bg-apple-bg"
+        style={{ backgroundColor: '#000000', color: '#ffffff' }}
+      >
         <MealPrepProvider>
           <div className="relative min-h-screen">
             {/* Background gradient for depth */}

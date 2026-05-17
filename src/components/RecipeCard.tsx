@@ -1,6 +1,7 @@
 'use client';
 
 import { Recipe } from '@/types';
+import { useMealPrep } from '@/lib/meal-prep-context';
 import { Card } from '@/components/ui';
 
 interface RecipeCardProps {
@@ -9,26 +10,52 @@ interface RecipeCardProps {
 }
 
 export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
-  // Calculate total cook time (simplified - just count cooking steps)
   const cookingSteps = recipe.cookingInfo.length;
   const totalIngredients = recipe.ingredients.length;
+  const { isInMealPrep, addRecipe, removeRecipe } = useMealPrep();
+  const inMealPrep = isInMealPrep(recipe.id);
+
+  const handleToggleMealPrep = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (inMealPrep) {
+      removeRecipe(recipe.id);
+    } else {
+      addRecipe(recipe);
+    }
+  };
 
   return (
-    <Card onClick={onClick} className="group">
-      {/* Recipe Name */}
-      <h3 className="text-lg font-semibold text-apple-label mb-2 group-hover:text-apple-blue transition-colors">
+    <Card onClick={onClick} className="group relative">
+      <button
+        type="button"
+        onClick={handleToggleMealPrep}
+        aria-label={inMealPrep ? `Remove ${recipe.name} from meal prep` : `Add ${recipe.name} to meal prep`}
+        aria-pressed={inMealPrep}
+        title={inMealPrep ? 'In meal prep — click to remove' : 'Add to meal prep'}
+        className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center border transition-colors z-10 ${
+          inMealPrep
+            ? 'bg-apple-blue/20 border-apple-blue/40 text-apple-blue hover:bg-apple-blue/30'
+            : 'bg-glass-bg border-glass-border text-apple-label-secondary hover:bg-glass-bg-hover hover:text-apple-label'
+        }`}
+      >
+        {inMealPrep ? (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+          </svg>
+        ) : (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        )}
+      </button>
+
+      <h3 className="text-lg font-semibold text-apple-label mb-2 group-hover:text-apple-blue transition-colors pr-12">
         {recipe.name}
       </h3>
 
-      {/* Quick Info */}
-      <div className="flex items-center gap-3 text-sm text-apple-label-secondary mb-4">
+      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-sm text-apple-label-secondary mb-4">
         <span className="flex items-center gap-1.5">
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -40,12 +67,7 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
         </span>
         <span className="text-apple-separator">•</span>
         <span className="flex items-center gap-1.5">
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -57,7 +79,6 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
         </span>
       </div>
 
-      {/* Cooking Info Preview */}
       {cookingSteps > 0 && (
         <div className="flex flex-wrap gap-2">
           {recipe.cookingInfo.slice(0, 2).map((info, index) => (
@@ -76,7 +97,6 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
         </div>
       )}
 
-      {/* Steps count */}
       <div className="mt-4 pt-3 border-t border-glass-border">
         <span className="text-xs text-apple-label-tertiary">
           {recipe.steps.length} steps

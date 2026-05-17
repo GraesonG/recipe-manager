@@ -6,7 +6,8 @@ A personal recipe management app with meal prep planning and Google Keep integra
 
 - Store and manage recipes with ingredients, cooking info, and steps
 - Browse recipes with sorting (A-Z, Z-A, Newest, Oldest)
-- Meal prep staging area with serving adjustments
+- **Import from URL** — paste a recipe page URL and the app extracts ingredients/steps/timing. Uses Schema.org JSON-LD for free when available; falls back to Claude (Anthropic) for pages without structured data.
+- Meal prep staging area with serving adjustments (persists across reloads)
 - Automatic ingredient combination and deduplication
 - **Pantry staple flag** — mark ingredients you keep on hand (salt, oil, etc.) so they're excluded from the shopping list
 - Send shopping lists to Google Keep
@@ -28,65 +29,29 @@ cd recipe-manager
 npm install
 ```
 
-### 2. Configure API Key
-
-The Google Keep endpoint is protected by an API key. Set it up:
+### 2. Configure Environment Variables
 
 ```bash
-# Generate a random API key
-openssl rand -base64 32
-
-# Copy the example env file
 cp .env.example .env.local
-
-# Edit .env.local and replace the placeholder with your generated key
-# Make sure both GKEEP_API_KEY and NEXT_PUBLIC_GKEEP_API_KEY have the same value
 ```
 
-Your `.env.local` should look like:
+#### Anthropic API Key (optional — only for AI URL import on non-JSON-LD pages)
+
+Get a key at [console.anthropic.com](https://console.anthropic.com/) and add it to `.env.local`:
+
 ```
-GKEEP_API_KEY=your-generated-random-key-here
-NEXT_PUBLIC_GKEEP_API_KEY=your-generated-random-key-here
+ANTHROPIC_API_KEY=sk-ant-...
 ```
+
+Without it, "Import from URL" still works on pages that publish Schema.org `Recipe` JSON-LD (most major recipe sites). Pages without JSON-LD will return a 503 prompting setup.
+
+#### Google Keep
+
+No env var needed for the route itself — it's protected by a same-origin check. The Google credentials live in your OS keyring; set them up by following [docs/google-keep-setup.md](./docs/google-keep-setup.md).
 
 ### 3. Set Up Google Keep Integration (Optional)
 
-The app can send shopping lists directly to Google Keep. To enable this:
-
-#### Prerequisites
-- Python 3.7 or higher
-- pip (Python package manager)
-
-#### Installation
-
-```bash
-# Navigate to scripts directory
-cd scripts
-
-# Install Python dependencies
-pip install -r requirements.txt
-
-# Run the setup wizard
-python3 google_keep.py setup
-```
-
-#### Authentication Notes
-
-- If you have **2-Factor Authentication** enabled on your Google account (recommended), you'll need to create an App Password:
-  1. Go to https://myaccount.google.com/apppasswords
-  2. Select "Mail" or create a custom app name
-  3. Copy the generated 16-character password
-  4. Use this password during setup instead of your regular password
-
-- Your credentials are stored securely:
-  - Email is stored in a local config file
-  - Master token is stored in your system's secure keyring (Keychain on macOS)
-
-#### Testing the Connection
-
-```bash
-python3 google_keep.py test
-```
+See [docs/google-keep-setup.md](./docs/google-keep-setup.md) for the full walkthrough (Python deps, auth wizard, 2FA app password, smoke test). The **Copy as text** button on the meal-prep page is always available as a fallback.
 
 ### 4. Run the Development Server
 
@@ -101,9 +66,10 @@ Open [http://localhost:3000](http://localhost:3000)
 ### Managing Recipes
 
 1. **Add a Recipe**: Click "Add Recipe" button, fill in the form
-2. **View Recipe**: Click any recipe card to see full details
-3. **Edit Recipe**: From the recipe detail page, click "Edit"
-4. **Delete Recipe**: From the recipe detail page, click "Delete"
+2. **Import from URL**: Click "Import from URL" in the toolbar, paste a recipe URL. We try Schema.org JSON-LD first (free), then fall back to Claude if needed. You review and edit the extracted recipe before saving.
+3. **View Recipe**: Click any recipe card to see full details
+4. **Edit Recipe**: From the recipe detail page, click "Edit"
+5. **Delete Recipe**: From the recipe detail page, click "Delete"
 
 ### Marking Pantry Staples
 
@@ -111,7 +77,7 @@ In the recipe form, each ingredient row has a **Pantry** toggle. Flip it on for 
 
 ### Meal Prep
 
-1. **Add to Meal Prep**: From any recipe detail page, click "Add to Meal Prep"
+1. **Add to Meal Prep**: From the home grid, click the **+** button in the top-right corner of any recipe card (or use the "Add to Meal Prep" button on the recipe detail page). Your meal-prep selection persists across page reloads.
 2. **Adjust Servings**: On the Meal Prep page, use +/- buttons to scale servings
 3. **View Combined List**: The right panel shows all ingredients combined into a shopping list. Ingredients flagged as pantry staples (in every contributing recipe) are hidden under a collapsible "Pantry items — not shopping" section. Click the checkbox next to any pantry item to add it back to the shopping list for this week.
 4. **Send to Google Keep**: Click "Send to Google Keep" to create a checklist (pantry items are excluded unless overridden)
@@ -120,19 +86,24 @@ The shopping list will be created as a pinned checklist note in Google Keep, nam
 
 ## Security
 
-### API Key Protection
+### Google Keep endpoint
 
-The Google Keep endpoint is protected by an API key to prevent unauthorized access:
+- Same-origin check on `/api/google-keep` — cross-origin requests are rejected with 403.
+- Subprocess invoked with `execFile` (no shell parsing). Page input is JSON-serialized to a temp file, not interpolated.
+- Server-side validation: title 1–200 chars, ≤200 ingredients, name 1–200, qty/unit ≤40.
 
-- The key is stored in `.env.local` (gitignored, never committed)
-- Both server (`GKEEP_API_KEY`) and client (`NEXT_PUBLIC_GKEEP_API_KEY`) must match
-- Requests without a valid `x-api-key` header are rejected with 401 Unauthorized
+### Google Keep credentials
 
-### Google Keep Credentials
+- Email stored in `scripts/.gkeep_config.json` (gitignored).
+- Master token stored in system keyring (macOS Keychain / Windows Credential Manager / Secret Service on Linux). Never written to a file or shipped to the browser.
 
-- Email stored in `scripts/.gkeep_config.json` (gitignored)
-- Master token stored in system keyring (macOS Keychain, Windows Credential Manager, etc.)
-- Never stored in code or plain text files
+### Import from URL endpoint
+
+- SSRF guard: URL must be http(s); DNS-resolves and rejects loopback, private (10/8, 172.16/12, 192.168/16), link-local, and IPv6 ULA/LL.
+- Resource caps: 10s fetch timeout, 2 MB response body cap.
+- Prompt injection defense: untrusted page content wrapped in `<recipe_source>` tags; LLM output forced through a fixed JSON-Schema tool; no other tools given to the model.
+- Server-side Zod validation with length and array-size caps before the recipe reaches the client.
+- In-memory rate limit: 10 imports/hour total.
 
 ## Project Structure
 
@@ -169,34 +140,13 @@ This app uses Apple's Liquid Glass design principles:
 
 ## Troubleshooting
 
-### API Key Issues
+### Google Keep
 
-**"Unauthorized: Invalid API key" error**
-- Make sure `.env.local` exists with both `GKEEP_API_KEY` and `NEXT_PUBLIC_GKEEP_API_KEY`
-- Both values must be identical
-- Restart the dev server after changing `.env.local`
+See [docs/google-keep-setup.md](./docs/google-keep-setup.md). The most common cause of failure is using your regular Google password instead of an App Password when 2FA is on.
 
-### Google Keep Issues
+### "Import from URL" returns 503
 
-**"Not authenticated" error**
-```bash
-cd scripts
-python3 google_keep.py setup
-```
-
-**"gkeepapi not found" error**
-```bash
-cd scripts
-pip install -r requirements.txt
-```
-
-**"python3 not found" error**
-- Make sure Python 3 is installed: `python3 --version`
-- On some systems, try `python` instead of `python3`
-
-**Authentication fails with 2FA**
-- Create an App Password at https://myaccount.google.com/apppasswords
-- Use the 16-character app password instead of your regular password
+That means the page didn't have Schema.org `Recipe` JSON-LD and `ANTHROPIC_API_KEY` isn't set. Either set the key in `.env.local`, or paste the recipe content manually.
 
 ## License
 

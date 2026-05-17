@@ -45,7 +45,7 @@ export function createCookingInfo(input: CookingInfoInput): CookingInfo {
  */
 export function createRecipeFromInput(input: RecipeInput): Recipe {
   const now = new Date().toISOString();
-  
+
   return {
     id: generateId(),
     name: input.name.trim(),
@@ -53,6 +53,7 @@ export function createRecipeFromInput(input: RecipeInput): Recipe {
     ingredients: input.ingredients.map(createIngredient),
     cookingInfo: input.cookingInfo.map(createCookingInfo),
     steps: input.steps.map((step) => step.trim()).filter((step) => step.length > 0),
+    sourceUrl: input.sourceUrl,
     createdAt: now,
     updatedAt: now,
   };
@@ -72,6 +73,7 @@ export function updateRecipeFromInput(
     ingredients: input.ingredients.map(createIngredient),
     cookingInfo: input.cookingInfo.map(createCookingInfo),
     steps: input.steps.map((step) => step.trim()).filter((step) => step.length > 0),
+    sourceUrl: input.sourceUrl ?? existingRecipe.sourceUrl,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -144,5 +146,6 @@ export function recipeToInput(recipe: Recipe): RecipeInput {
       description,
     })),
     steps: recipe.steps.length > 0 ? recipe.steps : [''],
+    sourceUrl: recipe.sourceUrl,
   };
 }

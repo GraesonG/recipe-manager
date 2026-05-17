@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { writeFile, unlink, mkdir } from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
 
-const execAsync = promisify(exec);
-
-// API Key for protection
-const API_KEY = process.env.GKEEP_API_KEY;
+const execFileAsync = promisify(execFile);
 
 interface ShoppingListItem {
   name: string;
@@ -29,244 +26,205 @@ interface GoogleKeepResult {
   error?: string;
 }
 
-/**
- * Validate the API key from request headers
- */
-function validateApiKey(request: NextRequest): boolean {
-  // If no API key is configured, allow all requests (development convenience)
-  if (!API_KEY || API_KEY === 'your-secret-key-change-this-in-production') {
-    console.warn('Warning: GKEEP_API_KEY not configured. API is unprotected.');
-    return true;
-  }
+const SCRIPT_PATH = path.join(process.cwd(), 'scripts', 'google_keep.py');
+const TEMP_DIR = path.join(process.cwd(), 'tmp');
 
-  const providedKey = request.headers.get('x-api-key');
-  return providedKey === API_KEY;
+// Same-origin guard. Replaces the previous NEXT_PUBLIC_GKEEP_API_KEY shipped-
+// to-client check (which provided no real protection). The route is only
+// intended to be called from this app's own pages.
+function isSameOrigin(request: NextRequest): boolean {
+  const origin = request.headers.get('origin');
+  const host = request.headers.get('host');
+  if (!origin) return true; // server-rendered same-origin fetches don't send Origin
+  if (!host) return false;
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
 }
 
-/**
- * POST /api/google-keep
- * Send shopping list to Google Keep via Python script
- */
-export async function POST(request: NextRequest) {
-  // Validate API key
-  if (!validateApiKey(request)) {
+function originGuard(request: NextRequest): NextResponse | null {
+  if (!isSameOrigin(request)) {
     return NextResponse.json(
-      { success: false, error: 'Unauthorized: Invalid API key' },
-      { status: 401 }
+      { success: false, error: 'Cross-origin requests are not allowed' },
+      { status: 403 }
+    );
+  }
+  return null;
+}
+
+function validateBody(body: unknown): { ok: true; data: GoogleKeepRequest } | { ok: false; error: string } {
+  if (!body || typeof body !== 'object') return { ok: false, error: 'Invalid body' };
+  const b = body as Record<string, unknown>;
+  const title = typeof b.title === 'string' ? b.title.trim() : '';
+  if (!title || title.length > 200) {
+    return { ok: false, error: 'title must be 1–200 chars' };
+  }
+  if (!Array.isArray(b.ingredients) || b.ingredients.length === 0) {
+    return { ok: false, error: 'ingredients must be a non-empty array' };
+  }
+  if (b.ingredients.length > 200) {
+    return { ok: false, error: 'too many ingredients (max 200)' };
+  }
+  const ingredients: ShoppingListItem[] = [];
+  for (const raw of b.ingredients) {
+    if (!raw || typeof raw !== 'object') {
+      return { ok: false, error: 'ingredient entries must be objects' };
+    }
+    const item = raw as Record<string, unknown>;
+    const name = typeof item.name === 'string' ? item.name.trim() : '';
+    const quantity = typeof item.quantity === 'string' ? item.quantity.trim() : '';
+    const unit = typeof item.unit === 'string' ? item.unit.trim() : '';
+    if (!name || name.length > 200) {
+      return { ok: false, error: 'ingredient name must be 1–200 chars' };
+    }
+    if (quantity.length > 40 || unit.length > 40) {
+      return { ok: false, error: 'ingredient quantity/unit must be ≤40 chars' };
+    }
+    ingredients.push({ name, quantity, unit });
+  }
+  return { ok: true, data: { title, ingredients } };
+}
+
+export async function POST(request: NextRequest) {
+  const guard = originGuard(request);
+  if (guard) return guard;
+
+  let parsed: unknown;
+  try {
+    parsed = await request.json();
+  } catch {
+    return NextResponse.json(
+      { success: false, error: 'Invalid JSON body' },
+      { status: 400 }
     );
   }
 
+  const validation = validateBody(parsed);
+  if (!validation.ok) {
+    return NextResponse.json(
+      { success: false, error: validation.error },
+      { status: 400 }
+    );
+  }
+
+  if (!existsSync(TEMP_DIR)) {
+    await mkdir(TEMP_DIR, { recursive: true });
+  }
+
+  const tempFile = path.join(TEMP_DIR, `shopping-list-${Date.now()}.json`);
+  await writeFile(tempFile, JSON.stringify(validation.data, null, 2));
+
   try {
-    const body: GoogleKeepRequest = await request.json();
+    const { stdout, stderr } = await execFileAsync(
+      'python3',
+      [SCRIPT_PATH, 'send', tempFile],
+      { timeout: 30000 }
+    );
 
-    // Validate request
-    if (!body.title || !body.ingredients || body.ingredients.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid request: title and ingredients are required' },
-        { status: 400 }
-      );
-    }
+    if (stderr) console.error('Python script stderr:', stderr);
 
-    // Prepare the data for the Python script
-    const listData = {
-      title: body.title,
-      ingredients: body.ingredients,
-    };
-
-    // Create temp directory if it doesn't exist
-    const tempDir = path.join(process.cwd(), 'tmp');
-    if (!existsSync(tempDir)) {
-      await mkdir(tempDir, { recursive: true });
-    }
-
-    // Write to a temporary JSON file
-    const tempFile = path.join(tempDir, `shopping-list-${Date.now()}.json`);
-    await writeFile(tempFile, JSON.stringify(listData, null, 2));
-
-    try {
-      // Path to the Python script
-      const scriptPath = path.join(process.cwd(), 'scripts', 'google_keep.py');
-
-      // Execute the Python script
-      const { stdout, stderr } = await execAsync(
-        `python3 "${scriptPath}" send "${tempFile}"`,
-        {
-          timeout: 30000, // 30 second timeout
-          env: { ...process.env },
-        }
-      );
-
-      // Log output for debugging
-      if (stderr) {
-        console.error('Python script stderr:', stderr);
-      }
-      console.log('Python script stdout:', stdout);
-
-      // Parse the result from the Python script
-      const resultMatch = stdout.match(/RESULT_JSON:(.+)/);
-      if (resultMatch) {
-        const result: GoogleKeepResult = JSON.parse(resultMatch[1]);
-        
-        if (result.success) {
-          return NextResponse.json({
-            success: true,
-            message: 'Shopping list sent to Google Keep!',
-            data: {
-              noteId: result.noteId,
-              title: result.title,
-              itemCount: result.itemCount,
-            },
-          });
-        } else {
-          return NextResponse.json(
-            { success: false, error: result.error || 'Failed to send to Google Keep' },
-            { status: 500 }
-          );
-        }
-      }
-
-      // If we couldn't parse the result, check if it looks like success
-      if (stdout.includes('Shopping list sent to Google Keep')) {
+    const resultMatch = stdout.match(/RESULT_JSON:(.+)/);
+    if (resultMatch) {
+      const result: GoogleKeepResult = JSON.parse(resultMatch[1]);
+      if (result.success) {
         return NextResponse.json({
           success: true,
           message: 'Shopping list sent to Google Keep!',
           data: {
-            title: body.title,
-            itemCount: body.ingredients.length,
+            noteId: result.noteId,
+            title: result.title,
+            itemCount: result.itemCount,
           },
         });
       }
-
-      // Unknown response
       return NextResponse.json(
-        { success: false, error: 'Unexpected response from Google Keep script' },
+        { success: false, error: result.error || 'Failed to send to Google Keep' },
         { status: 500 }
       );
-
-    } catch (execError: any) {
-      console.error('Error executing Python script:', execError);
-
-      // Check for common errors
-      if (execError.message?.includes('python3: not found') || execError.message?.includes('python3')) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: 'Python 3 is not installed or not in PATH. Please install Python 3.' 
-          },
-          { status: 500 }
-        );
-      }
-
-      if (execError.message?.includes('Not authenticated') || execError.stderr?.includes('Not authenticated')) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: 'Google Keep not authenticated. Please run: cd scripts && python3 google_keep.py setup' 
-          },
-          { status: 401 }
-        );
-      }
-
-      if (execError.message?.includes('gkeepapi') || execError.stderr?.includes('gkeepapi')) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: 'Required Python packages not installed. Please run: cd scripts && pip install -r requirements.txt' 
-          },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: `Failed to execute Google Keep script: ${execError.message || 'Unknown error'}` 
-        },
-        { status: 500 }
-      );
-
-    } finally {
-      // Clean up temp file
-      try {
-        await unlink(tempFile);
-      } catch {
-        // Ignore cleanup errors
-      }
     }
 
-  } catch (error) {
-    console.error('Error processing Google Keep request:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to process request' },
+      { success: false, error: 'Unexpected response from Google Keep script' },
       { status: 500 }
     );
+  } catch (execError: unknown) {
+    return NextResponse.json(scriptErrorBody(execError), { status: 500 });
+  } finally {
+    try {
+      await unlink(tempFile);
+    } catch {
+      // ignore cleanup errors
+    }
   }
 }
 
-/**
- * GET /api/google-keep
- * Check if Google Keep is configured
- */
 export async function GET(request: NextRequest) {
-  // Validate API key
-  if (!validateApiKey(request)) {
-    return NextResponse.json(
-      { success: false, error: 'Unauthorized: Invalid API key' },
-      { status: 401 }
-    );
+  const guard = originGuard(request);
+  if (guard) return guard;
+
+  if (!existsSync(SCRIPT_PATH)) {
+    return NextResponse.json({
+      configured: false,
+      error: 'Google Keep script not found',
+    });
   }
 
   try {
-    const scriptPath = path.join(process.cwd(), 'scripts', 'google_keep.py');
-    
-    // Check if script exists
-    if (!existsSync(scriptPath)) {
+    const { stdout } = await execFileAsync(
+      'python3',
+      [SCRIPT_PATH, 'test'],
+      { timeout: 15000 }
+    );
+    if (stdout.includes('Connection successful')) {
       return NextResponse.json({
-        configured: false,
-        error: 'Google Keep script not found',
+        configured: true,
+        message: 'Google Keep is configured and connected',
       });
     }
-
-    // Try to test the connection
-    try {
-      const { stdout, stderr } = await execAsync(
-        `python3 "${scriptPath}" test`,
-        { timeout: 15000 }
-      );
-
-      if (stdout.includes('Connection successful')) {
-        return NextResponse.json({
-          configured: true,
-          message: 'Google Keep is configured and connected',
-        });
-      }
-
-      return NextResponse.json({
-        configured: false,
-        error: 'Google Keep authentication required',
-        setupInstructions: 'Run: cd scripts && python3 google_keep.py setup',
-      });
-
-    } catch (execError: any) {
-      if (execError.message?.includes('Not authenticated') || execError.stderr?.includes('Not authenticated')) {
-        return NextResponse.json({
-          configured: false,
-          error: 'Google Keep authentication required',
-          setupInstructions: 'Run: cd scripts && python3 google_keep.py setup',
-        });
-      }
-
-      return NextResponse.json({
-        configured: false,
-        error: execError.message || 'Failed to check Google Keep status',
-      });
-    }
-
-  } catch (error) {
-    console.error('Error checking Google Keep status:', error);
     return NextResponse.json({
       configured: false,
-      error: 'Failed to check Google Keep status',
+      error: 'Google Keep authentication required',
+      setupInstructions: 'Run: cd scripts && python3 google_keep.py setup',
+    });
+  } catch (execError: unknown) {
+    return NextResponse.json({
+      configured: false,
+      ...scriptErrorBody(execError),
     });
   }
+}
+
+function scriptErrorBody(err: unknown): { success: false; error: string } {
+  const message =
+    err instanceof Error
+      ? err.message
+      : typeof err === 'string'
+      ? err
+      : 'Unknown error';
+  const stderr =
+    err && typeof err === 'object' && 'stderr' in err && typeof (err as { stderr?: unknown }).stderr === 'string'
+      ? ((err as { stderr: string }).stderr as string)
+      : '';
+
+  if (message.includes('ENOENT') || message.includes('python3')) {
+    return {
+      success: false,
+      error: 'Python 3 is not installed or not in PATH.',
+    };
+  }
+  if (message.includes('Not authenticated') || stderr.includes('Not authenticated')) {
+    return {
+      success: false,
+      error: 'Google Keep not authenticated. Run: cd scripts && python3 google_keep.py setup',
+    };
+  }
+  if (message.includes('gkeepapi') || stderr.includes('gkeepapi')) {
+    return {
+      success: false,
+      error: 'Required Python packages not installed. Run: cd scripts && pip install -r requirements.txt',
+    };
+  }
+  return { success: false, error: message };
 }

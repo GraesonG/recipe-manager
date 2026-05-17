@@ -214,7 +214,7 @@ export function RecipeForm({ initialData, recipeId, mode }: RecipeFormProps) {
         <div className="space-y-3">
           {formData.ingredients.map((ingredient, index) => (
             <div key={index} className="flex items-start gap-3 flex-wrap">
-              <div className="flex-1 min-w-[160px]">
+              <div className="w-full sm:flex-1 sm:w-auto sm:min-w-[160px]">
                 <Input
                   placeholder="Ingredient name"
                   value={ingredient.name}

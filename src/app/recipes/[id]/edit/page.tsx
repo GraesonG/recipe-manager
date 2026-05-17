@@ -40,7 +40,7 @@ export default function EditRecipePage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8">
           <Link 
             href={`/recipes/${id}`} 
@@ -64,7 +64,7 @@ export default function EditRecipePage() {
 
   if (error || !recipe || !initialData) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8">
           <Link 
             href="/" 
@@ -90,7 +90,7 @@ export default function EditRecipePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
       {/* Page Header */}
       <div className="mb-8">
         <Link 

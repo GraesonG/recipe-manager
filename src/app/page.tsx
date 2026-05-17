@@ -40,7 +40,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-semibold text-apple-label mb-2">

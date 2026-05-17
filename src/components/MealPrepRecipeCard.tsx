@@ -2,7 +2,7 @@
 
 import { MealPrepItem } from '@/types';
 import { useMealPrep } from '@/lib/meal-prep-context';
-import { GlassPanel, Button } from '@/components/ui';
+import { GlassPanel } from '@/components/ui';
 
 interface MealPrepRecipeCardProps {
   item: MealPrepItem;
@@ -43,22 +43,23 @@ export function MealPrepRecipeCard({ item }: MealPrepRecipeCardProps) {
           )}
         </div>
 
-        {/* Remove Button */}
-        <Button
-          variant="ghost"
-          size="sm"
+        {/* Pin / Unpin Button — recipe is pinned to the plan; click to remove */}
+        <button
+          type="button"
           onClick={() => removeRecipe(recipe.id)}
-          className="text-apple-label-tertiary hover:text-apple-red flex-shrink-0"
+          aria-label={`Unpin ${recipe.name} from meal prep`}
+          title="Unpin from meal prep"
+          className="group/pin flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-apple-blue hover:text-apple-red hover:bg-apple-red/10 transition-colors"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M6 18L18 6M6 6l12 12"
-            />
+          <svg
+            className="w-5 h-5 transition-transform group-hover/pin:rotate-45"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M14.5 2.5a1 1 0 011 1V8l2.6 2.6a1 1 0 01.3.7v.7a1 1 0 01-1 1H13v6.5a1 1 0 01-2 0V13H6.6a1 1 0 01-1-1v-.7a1 1 0 01.3-.7L8.5 8V3.5a1 1 0 011-1h5z" />
           </svg>
-        </Button>
+        </button>
       </div>
 
       {/* Servings Adjuster */}
